@@ -2,6 +2,7 @@
     "name": "gipfl/protocol-jsonrpc",
     "description": "JsonRPC Connection implementation",
     "type": "library",
+    "license": "MIT",
     "authors": [
         {
             "name": "Thomas Gelf",
