@@ -1,4 +1,4 @@
-gipfl\\JsonRpc
-==============
+gipfl\\Protocol\\JsonRpc
+========================
 
 JsonRpc implementation.
