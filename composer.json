@@ -20,7 +20,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/gipfl/Protocol",
+            "url": "https://github.com/gipfl/protocol",
             "no-api":true
         }
     ],
