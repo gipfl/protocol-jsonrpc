@@ -29,6 +29,6 @@
         "ext-json": "*",
         "react/promise": "^2.7",
         "react/stream": "^1.0",
-        "gipfl/protocol": "*"
+        "gipfl/protocol": "dev-master"
     }
 }
