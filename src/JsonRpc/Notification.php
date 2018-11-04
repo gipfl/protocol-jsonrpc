@@ -7,10 +7,13 @@ class Notification extends Packet
     /** @var string */
     protected $method;
 
+    /** @var object|array */
+    protected $params;
+
     public function __construct($method, $params)
     {
-        $this->method = $method;
-        $this->params = $params;
+        $this->setMethod($method);
+        $this->setParams($params);
     }
 
     /**
@@ -30,7 +33,40 @@ class Notification extends Packet
     }
 
     /**
-     * @return array
+     * @return object|array
+     */
+    public function getParams()
+    {
+        return $this->params;
+    }
+
+    /**
+     * @param object|array $params
+     */
+    public function setParams($params)
+    {
+        $this->params = $params;
+    }
+
+    /**
+     * @param $name
+     * @param mixed $default
+     * @return mixed|null
+     */
+    public function getParam($name, $default = null)
+    {
+        $p = & $this->params;
+        if (\is_object($p) && \property_exists($p, $name)) {
+            return $p->$name;
+        } elseif (\is_array($p) && \array_key_exists($name, $p)) {
+            return $p[$name];
+        }
+
+        return $default;
+    }
+
+    /**
+     * @return object
      */
     public function toPlainObject()
     {
@@ -40,7 +76,7 @@ class Notification extends Packet
             'params'  => $this->params,
         ];
 
-        return $plain;
+        return (object) $plain;
     }
 
     /**
@@ -50,7 +86,7 @@ class Notification extends Packet
      */
     public static function create($method, $params)
     {
-        $packet = new static($method, (object) $params);
+        $packet = new static($method, $params);
 
         return $packet;
     }

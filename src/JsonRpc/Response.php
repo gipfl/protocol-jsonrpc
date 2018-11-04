@@ -4,13 +4,13 @@ namespace gipfl\Protocol\JsonRpc;
 
 class Response extends Packet
 {
-    /** @var string $id */
+    /** @var mixed|null This could be null when sending a parse error */
     protected $id;
 
     /** @var mixed */
     protected $result;
 
-    /** @var string */
+    /** @var Error */
     protected $error;
 
     public function __construct($id = null)
@@ -25,6 +25,7 @@ class Response extends Packet
     public static function forRequest(Request $request)
     {
         $response = new Response($request->getId());
+
         return $response;
     }
 
@@ -35,11 +36,16 @@ class Response extends Packet
     {
         $plain = (object) [
             'jsonrpc' => '2.0',
-            'params'  => $this->params,
         ];
 
         if ($this->id !== null) {
             $plain->id = $this->id;
+        }
+
+        if ($this->error === null) {
+            $plain->result = $this->result;
+        } else {
+            $plain->error = $this->error->toPlainObject();
         }
 
         return $plain;
@@ -54,6 +60,14 @@ class Response extends Packet
     }
 
     /**
+     * @param $result
+     */
+    public function setResult($result)
+    {
+        $this->result = $result;
+    }
+
+    /**
      * @return bool
      */
     public function hasId()
@@ -62,7 +76,7 @@ class Response extends Packet
     }
 
     /**
-     * @return null|string
+     * @return null|int|string
      */
     public function getId()
     {
@@ -77,16 +91,13 @@ class Response extends Packet
         $this->id = $id;
     }
 
-    /**
-     * @param $result
-     */
-    public function setResult($result)
+    public function isError()
     {
-        $this->result = $result;
+        return $this->error !== null;
     }
 
     /**
-     * @return string
+     * @return Error|null
      */
     public function getError()
     {
@@ -96,7 +107,7 @@ class Response extends Packet
     /**
      * @param $error
      */
-    public function setError($error)
+    public function setError(Error $error)
     {
         $this->error = $error;
     }

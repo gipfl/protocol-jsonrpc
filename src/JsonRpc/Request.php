@@ -2,20 +2,28 @@
 
 namespace gipfl\Protocol\JsonRpc;
 
-use gipfl\Protocol\JsonRpc\Exception\ProtocolError;
+use gipfl\Protocol\Exception\ProtocolError;
 
 class Request extends Notification
 {
+    /** @var mixed */
     protected $id;
 
-    public function __construct($method, $params = null, $id = null)
+    /**
+     * Request constructor.
+     * @param $method
+     * @param mixed $id
+     * @param null $params
+     */
+    public function __construct($method, $id, $params = null)
     {
         parent::__construct($method, $params);
+
         $this->id = $id;
     }
 
     /**
-     * @return array
+     * @return object
      * @throws ProtocolError
      */
     public function toPlainObject()
@@ -27,17 +35,9 @@ class Request extends Notification
         }
 
         $plain = parent::toPlainObject();
-        $plain['id'] = $this->id;
+        $plain->id = $this->id;
 
         return $plain;
-    }
-
-    /**
-     * @return bool
-     */
-    public function hasId()
-    {
-        return null !== $this->id;
     }
 
     /**
