@@ -7,7 +7,7 @@ class Notification extends Packet
     /** @var string */
     protected $method;
 
-    /** @var object|array */
+    /** @var \stdClass|array */
     protected $params;
 
     public function __construct($method, $params)
@@ -75,6 +75,10 @@ class Notification extends Packet
             'method'  => $this->method,
             'params'  => $this->params,
         ];
+
+        if ($this->hasExtraProperties()) {
+            $plain += (array) $this->getExtraProperties();
+        }
 
         return (object) $plain;
     }

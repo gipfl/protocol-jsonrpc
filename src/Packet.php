@@ -6,6 +6,9 @@ use gipfl\Protocol\Exception\ProtocolError;
 
 abstract class Packet
 {
+    /** @var \stdClass|null */
+    protected $extraProperties;
+
     abstract public function toPlainObject();
 
     /**
@@ -25,6 +28,39 @@ abstract class Packet
     }
 
     /**
+     * @return bool
+     */
+    public function hasExtraProperties()
+    {
+        return $this->extraProperties !== null;
+    }
+
+    /**
+     * @return \stdClass|null
+     */
+    public function getExtraProperties()
+    {
+        return $this->extraProperties;
+    }
+
+    /**
+     * @param \stdClass|null $extraProperties
+     * @return $this
+     * @throws ProtocolError
+     */
+    public function setExtraProperties($extraProperties)
+    {
+        foreach (['id', 'error', 'result', 'jsonrpc', 'method', 'params'] as $key) {
+            if (\property_exists($extraProperties, $key)) {
+                throw new ProtocolError("Cannot accept '$key' as an extra property");
+            }
+        }
+        $this->extraProperties = $extraProperties;
+
+        return $this;
+    }
+
+    /**
      * @param $string
      * @return Notification|Request|Response
      * @throws ProtocolError
@@ -38,31 +74,36 @@ abstract class Packet
                 \json_last_error_msg()
             ), Error::PARSE_ERROR);
         }
-        static::assertPropertyExists($raw, 'jsonrpc');
-
-        if ($raw->jsonrpc !== '2.0') {
-            throw new ProtocolError(sprintf(
-                'Only JSON-RPC 2.0 is supported, got %s',
-                $raw->jsonrpc
-            ), Error::INVALID_REQUEST);
+        $version = static::stripRequiredProperty($raw, 'jsonrpc');
+        if ($version !== '2.0') {
+            throw new ProtocolError(
+                "Only JSON-RPC 2.0 is supported, got $version",
+                Error::INVALID_REQUEST
+            );
         }
 
+        $id = self::stripOptionalProperty($raw, 'id');
         if (\property_exists($raw, 'method')) {
-            static::assertPropertyExists($raw, 'params');
-            if (\property_exists($raw, 'id')) {
-                return new Request($raw->method, $raw->id, $raw->params);
+            $method = self::stripRequiredProperty($raw, 'method');
+            $params = self::stripRequiredProperty($raw, 'params');
+
+            if ($id === null) {
+                $packet = new Notification($method, $params);
             } else {
-                return new Notification($raw->method, $raw->params);
+                $packet = new Request($method, $id, $params);
             }
-        } elseif (\property_exists($raw, 'id')) {
-            $packet = new Response($raw->id);
-            static::assertPropertyExists($raw, 'result');
-            $packet->setResult($raw->result);
-        } else {
+        } elseif ($id === null) {
             throw new ProtocolError(
                 "Given string is not a valid JSON-RPC 2.0 packet: $string",
                 Error::INVALID_REQUEST
             );
+        } else {
+            static::assertPropertyExists($raw, 'result');
+            $packet = new Response($id);
+            $packet->setResult($raw->result);
+        }
+        if (count((array) $raw) > 0) {
+            $packet->setExtraProperties($raw);
         }
 
         return $packet;
@@ -81,5 +122,43 @@ abstract class Packet
                 Error::INVALID_REQUEST
             );
         }
+    }
+
+    /**
+     * @param \stdClass $object
+     * @param string $property
+     * @return mixed|null
+     */
+    protected static function stripOptionalProperty($object, $property)
+    {
+        if (\property_exists($object, $property)) {
+            $value = $object->$property;
+            unset($object->$property);
+
+            return $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param \stdClass $object
+     * @param string $property
+     * @return mixed
+     * @throws ProtocolError
+     */
+    protected static function stripRequiredProperty($object, $property)
+    {
+        if (! \property_exists($object, $property)) {
+            throw new ProtocolError(
+                "Expected valid JSON-RPC, got no '$property' property",
+                Error::INVALID_REQUEST
+            );
+        }
+
+        $value = $object->$property;
+        unset($object->$property);
+
+        return $value;
     }
 }

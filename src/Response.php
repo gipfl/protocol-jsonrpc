@@ -37,6 +37,9 @@ class Response extends Packet
         $plain = (object) [
             'jsonrpc' => '2.0',
         ];
+        if ($this->hasExtraProperties()) {
+            $plain += (array) $this->getExtraProperties();
+        }
 
         if ($this->id !== null) {
             $plain->id = $this->id;
