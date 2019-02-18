@@ -191,7 +191,12 @@ class Connection
 
     protected function call($namespace, $method, Notification $packet)
     {
-        if (isset($this->handlers[$namespace])) {
+        if ($handler = $this->handlers[$namespace]) {
+            if ($handler instanceof PacketHandler) {
+                return $handler->handle($packet);
+            }
+
+            // Legacy handlers, deprecated:
             $params = $packet->getParams();
             if (\is_object($params)) {
                 return $this->handlers[$namespace]->$method($params);
