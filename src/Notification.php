@@ -49,7 +49,7 @@ class Notification extends Packet
     }
 
     /**
-     * @param $name
+     * @param string $name
      * @param mixed $default
      * @return mixed|null
      */

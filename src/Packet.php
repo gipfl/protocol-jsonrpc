@@ -113,10 +113,10 @@ abstract class Packet
             );
         }
 
-        $id = self::stripOptionalProperty($raw, 'id');
+        $id = static::stripOptionalProperty($raw, 'id');
         if (\property_exists($raw, 'method')) {
-            $method = self::stripRequiredProperty($raw, 'method');
-            $params = self::stripRequiredProperty($raw, 'params');
+            $method = static::stripRequiredProperty($raw, 'method');
+            $params = static::stripRequiredProperty($raw, 'params');
 
             if ($id === null) {
                 $packet = new Notification($method, $params);
@@ -129,9 +129,9 @@ abstract class Packet
                 Error::INVALID_REQUEST
             );
         } else {
-            static::assertPropertyExists($raw, 'result');
+            $result = static::stripRequiredProperty($raw, 'result');
             $packet = new Response($id);
-            $packet->setResult($raw->result);
+            $packet->setResult($result);
         }
         if (count((array) $raw) > 0) {
             $packet->setExtraProperties($raw);
