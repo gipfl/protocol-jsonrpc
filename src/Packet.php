@@ -67,8 +67,8 @@ abstract class Packet
      */
     public function getExtraProperty($name, $default = null)
     {
-        if (isset($this->extraProperties[$name])) {
-            return $this->extraProperties[$name];
+        if (isset($this->extraProperties->$name)) {
+            return $this->extraProperties->$name;
         } else {
             return $default;
         }
@@ -83,9 +83,9 @@ abstract class Packet
     public function setExtraProperty($name, $value)
     {
         if ($this->extraProperties === null) {
-            $this->extraProperties = [$name => $value];
+            $this->extraProperties = (object) [$name => $value];
         } else {
-            $this->extraProperties[$name] = $value;
+            $this->extraProperties->$name = $value;
         }
 
         return $this;
