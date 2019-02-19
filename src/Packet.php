@@ -61,6 +61,37 @@ abstract class Packet
     }
 
     /**
+     * @param string $name
+     * @param mixed|null $default
+     * @return mixed|null
+     */
+    public function getExtraProperty($name, $default = null)
+    {
+        if (isset($this->extraProperties[$name])) {
+            return $this->extraProperties[$name];
+        } else {
+            return $default;
+        }
+    }
+
+
+    /**
+     * @param string $name
+     * @param mixed $value
+     * @return $this
+     */
+    public function setExtraProperty($name, $value)
+    {
+        if ($this->extraProperties === null) {
+            $this->extraProperties = [$name => $value];
+        } else {
+            $this->extraProperties[$name] = $value;
+        }
+
+        return $this;
+    }
+
+    /**
      * @param $string
      * @return Notification|Request|Response
      * @throws ProtocolError
