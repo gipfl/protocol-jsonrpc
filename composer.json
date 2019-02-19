@@ -17,18 +17,11 @@
             "gipfl\\Protocol\\JsonRpc\\": "src"
         }
     },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/gipfl/protocol",
-            "no-api":true
-        }
-    ],
     "require": {
         "php": ">=5.6.0",
         "ext-json": "*",
+        "gipfl/protocol": "^0.1.0",
         "react/promise": "^2.7",
-        "react/stream": "^1.0",
-        "gipfl/protocol": "dev-master"
+        "react/stream": "^1.0"
     }
 }
