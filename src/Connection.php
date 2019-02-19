@@ -2,6 +2,7 @@
 
 namespace gipfl\Protocol\JsonRpc;
 
+use Evenement\EventEmitterTrait;
 use Exception;
 use InvalidArgumentException;
 use React\Promise\Deferred;
@@ -11,6 +12,8 @@ use RuntimeException;
 
 class Connection
 {
+    use EventEmitterTrait;
+
     /** @var DuplexStreamInterface */
     protected $connection;
 
@@ -36,6 +39,9 @@ class Connection
                 $response->setError(Error::forException($error));
                 $this->connection->write($response->toString());
             }
+        });
+        $this->connection->on('end', function () {
+            $this->emit('end');
         });
     }
 
@@ -206,5 +212,10 @@ class Connection
         } else {
             return new Error(Error::METHOD_NOT_FOUND);
         }
+    }
+
+    public function close()
+    {
+        $this->connection->close();
     }
 }
