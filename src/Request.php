@@ -15,7 +15,7 @@ class Request extends Notification
      * @param mixed $id
      * @param null $params
      */
-    public function __construct($method, $id, $params = null)
+    public function __construct($method, $id = null, $params = null)
     {
         parent::__construct($method, $params);
 

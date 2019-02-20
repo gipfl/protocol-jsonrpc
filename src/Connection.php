@@ -155,6 +155,10 @@ class Connection
     public function sendRequest(Request $request)
     {
         $id = $request->getId();
+        if ($id === null) {
+            $id = $this->getRandomId();
+            $request->setId($id);
+        }
         if (isset($this->pending[$id])) {
             throw new InvalidArgumentException(
                 "A request with id '$id' is already pending"
@@ -165,6 +169,16 @@ class Connection
         $this->pending[$id] = $deferred;
 
         return $deferred->promise();
+    }
+
+    protected function getRandomId()
+    {
+        $id = rand(1, 1000000000);
+        if (isset($this->pending[$id])) {
+            $id = $this->getRandomId();
+        }
+
+        return $id;
     }
 
     /**
