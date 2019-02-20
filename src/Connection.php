@@ -171,6 +171,23 @@ class Connection
         return $deferred->promise();
     }
 
+    public function request($method, $params = null)
+    {
+        $request = new Request($method, $this->getRandomId(), $params);
+        $deferred = new Deferred();
+        $this->sendRequest($request)->then(function (Response $response) use ($deferred) {
+            if ($response->isError()) {
+                $deferred->reject($response->getError()->getMessage());
+            } else {
+                $deferred->resolve($response->getResult());
+            }
+        })->otherwise(function (Exception $e) use ($deferred) {
+            $deferred->reject($e->getMessage());
+        });
+
+        return $deferred->promise();
+    }
+
     protected function getRandomId()
     {
         $id = rand(1, 1000000000);
