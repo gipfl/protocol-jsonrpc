@@ -27,6 +27,8 @@ class Connection
 
     protected $nsRegex = '/\./';
 
+    protected $unknownErrorCount = 0;
+
     public function handle(DuplexStreamInterface $connection)
     {
         $this->connection = $connection;
@@ -35,6 +37,10 @@ class Connection
                 $this->handlePacket(Packet::decode($data));
             } catch (Exception $error) {
                 echo $error->getMessage() . "\n";
+                $this->unknownErrorCount++;
+                if ($this->unknownErrorCount === 3) {
+                    $this->close();
+                }
                 $response = new Response();
                 $response->setError(Error::forException($error));
                 $this->connection->write($response->toString());
@@ -120,6 +126,10 @@ class Connection
         }
     }
 
+    /**
+     * @param Notification $notification
+     * @return Error|mixed
+     */
     protected function handleNotification(Notification $notification)
     {
         $method = $notification->getMethod();
@@ -130,7 +140,9 @@ class Connection
         }
 
         try {
-            return $this->call($namespace, $method, $notification);
+            $response = $this->call($namespace, $method, $notification);
+
+            return $response;
         } catch (Exception $exception) {
             return Error::forException($exception);
         }

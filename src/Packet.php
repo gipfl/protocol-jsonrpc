@@ -113,7 +113,12 @@ abstract class Packet
             );
         }
 
+        // Hint: we MUST use property_exists here, as a NULL id is allowed
+        // in error responsed in case it wasn't possible to determine a
+        // request id
+        $hasId = property_exists($raw, 'id');
         $id = static::stripOptionalProperty($raw, 'id');
+        $error = static::stripOptionalProperty($raw, 'error');
         if (\property_exists($raw, 'method')) {
             $method = static::stripRequiredProperty($raw, 'method');
             $params = static::stripRequiredProperty($raw, 'params');
@@ -123,15 +128,23 @@ abstract class Packet
             } else {
                 $packet = new Request($method, $id, $params);
             }
-        } elseif ($id === null) {
+        } elseif (! $hasId) {
             throw new ProtocolError(
                 "Given string is not a valid JSON-RPC 2.0 packet: $string",
                 Error::INVALID_REQUEST
             );
         } else {
-            $result = static::stripRequiredProperty($raw, 'result');
             $packet = new Response($id);
-            $packet->setResult($result);
+            if ($error) {
+                $packet->setError(new Error(
+                    static::stripOptionalProperty($error, 'code'),
+                    static::stripOptionalProperty($error, 'message'),
+                    static::stripOptionalProperty($error, 'data')
+                ));
+            } else {
+                $result = static::stripRequiredProperty($raw, 'result');
+                $packet->setResult($result);
+            }
         }
         if (count((array) $raw) > 0) {
             $packet->setExtraProperties($raw);

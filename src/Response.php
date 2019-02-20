@@ -10,8 +10,11 @@ class Response extends Packet
     /** @var mixed */
     protected $result;
 
-    /** @var Error */
+    /** @var Error|null */
     protected $error;
+
+    /** @var string */
+    protected $message;
 
     public function __construct($id = null)
     {
@@ -48,6 +51,9 @@ class Response extends Packet
         if ($this->error === null) {
             $plain->result = $this->result;
         } else {
+            if (! isset($plain->id)) {
+                $plain->id = null;
+            }
             $plain->error = $this->error->toPlainObject();
         }
 
@@ -64,10 +70,13 @@ class Response extends Packet
 
     /**
      * @param $result
+     * @return $this
      */
     public function setResult($result)
     {
         $this->result = $result;
+
+        return $this;
     }
 
     /**
@@ -109,9 +118,12 @@ class Response extends Packet
 
     /**
      * @param $error
+     * @return $this;
      */
     public function setError(Error $error)
     {
         $this->error = $error;
+
+        return $this;
     }
 }

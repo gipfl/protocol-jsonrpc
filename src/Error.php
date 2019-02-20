@@ -91,6 +91,30 @@ class Error
         );
     }
 
+    /**
+     * @return int
+     */
+    public function getCode()
+    {
+        return $this->code;
+    }
+
+    /**
+     * @return string
+     */
+    public function getMessage()
+    {
+        return $this->message;
+    }
+
+    /**
+     * @return mixed|null
+     */
+    public function getData()
+    {
+        return $this->data;
+    }
+
     public function toPlainObject()
     {
         $result = [
