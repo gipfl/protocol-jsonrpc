@@ -100,6 +100,16 @@ class Error
     }
 
     /**
+     * @param int $code
+     * @return $this
+     */
+    public function setCode($code)
+    {
+        $this->code = $code;
+        return $this;
+    }
+
+    /**
      * @return string
      */
     public function getMessage()
@@ -108,11 +118,31 @@ class Error
     }
 
     /**
+     * @param string $message
+     * @return $this
+     */
+    public function setMessage($message)
+    {
+        $this->message = $message;
+        return $this;
+    }
+
+    /**
      * @return mixed|null
      */
     public function getData()
     {
         return $this->data;
+    }
+
+    /**
+     * @param mixed|null $data
+     * @return $this
+     */
+    public function setData($data)
+    {
+        $this->data = $data;
+        return $this;
     }
 
     public function toPlainObject()

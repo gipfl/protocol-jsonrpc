@@ -103,7 +103,7 @@ class Connection
     {
         if ($result instanceof Error) {
             $response = Response::forRequest($request);
-            $response->setError(new Error(Error::METHOD_NOT_FOUND));
+            $response->setError($result);
 
             $this->connection->write($response->toString());
         } elseif ($result instanceof Promise) {
@@ -228,14 +228,6 @@ class Connection
         return $this;
     }
 
-    protected function sendUnknownMethodError(Request $request)
-    {
-        $response = Response::forRequest($request);
-        $response->setError(new Error(Error::METHOD_NOT_FOUND));
-
-        $this->connection->write($response->toString());
-    }
-
     protected function call($namespace, $method, Notification $packet)
     {
         if ($handler = $this->handlers[$namespace]) {
@@ -251,7 +243,16 @@ class Connection
                 return \call_user_func_array([$this->handlers[$namespace], $method], $params);
             }
         } else {
-            return new Error(Error::METHOD_NOT_FOUND);
+            $error = new Error(Error::METHOD_NOT_FOUND);
+            $error->setMessage(sprintf(
+                '%s: %s%s%s',
+                $error->getMessage(),
+                $namespace,
+                $this->nsSeparator,
+                $method
+            ));
+
+            return $error;
         }
     }
 
