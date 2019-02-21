@@ -177,12 +177,10 @@ class Connection
         $deferred = new Deferred();
         $this->sendRequest($request)->then(function (Response $response) use ($deferred) {
             if ($response->isError()) {
-                $deferred->reject($response->getError()->getMessage());
+                $deferred->reject(new RuntimeException($response->getError()->getMessage()));
             } else {
                 $deferred->resolve($response->getResult());
             }
-        })->otherwise(function (Exception $e) use ($deferred) {
-            $deferred->reject($e->getMessage());
         });
 
         return $deferred->promise();
