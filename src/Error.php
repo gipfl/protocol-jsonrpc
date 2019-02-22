@@ -84,11 +84,12 @@ class Error
             $data = $exception->getTraceAsString();
         }
 
-        return new static(
-            $code,
+        return new static($code, sprintf(
+            '%s in %s(%d)',
             $exception->getMessage(),
-            $data
-        );
+            $exception->getFile(),
+            $exception->getLine()
+        ), $data);
     }
 
     /**
