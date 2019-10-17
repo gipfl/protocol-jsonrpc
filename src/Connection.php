@@ -230,7 +230,8 @@ class Connection
 
     protected function call($namespace, $method, Notification $packet)
     {
-        if ($handler = $this->handlers[$namespace]) {
+        if (isset($this->handlers[$namespace])) {
+            $handler = $this->handlers[$namespace];
             if ($handler instanceof PacketHandler) {
                 return $handler->handle($packet);
             }
@@ -244,7 +245,7 @@ class Connection
             }
         } else {
             $error = new Error(Error::METHOD_NOT_FOUND);
-            $error->setMessage(sprintf(
+            $error->setMessage(\sprintf(
                 '%s: %s%s%s',
                 $error->getMessage(),
                 $namespace,
