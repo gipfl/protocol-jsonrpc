@@ -217,6 +217,16 @@ class Connection
     }
 
     /**
+     * @param string $method
+     * @param null $params
+     */
+    public function notification($method, $params = null)
+    {
+        $notification = new Notification($method, $params);
+        $this->sendNotification($notification);
+    }
+
+    /**
      * @param $namespace
      * @param $handler
      * @return Connection
