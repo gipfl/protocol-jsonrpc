@@ -7,7 +7,6 @@ use gipfl\Protocol\JsonRpc\Packet;
 use gipfl\Protocol\JsonRpc\Response;
 use gipfl\Protocol\JsonRpc\TestCase;
 use React\EventLoop\Factory;
-use React\EventLoop\LoopInterface;
 use React\Stream\DuplexResourceStream;
 
 class ConnectionTest extends TestCase
