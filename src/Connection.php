@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use React\Promise\Deferred;
 use React\Promise\Promise;
 use React\Stream\DuplexStreamInterface;
+use React\Stream\Util;
 use RuntimeException;
 
 class Connection
@@ -46,9 +47,8 @@ class Connection
                 $this->connection->write($response->toString());
             }
         });
-        $this->connection->on('end', function () {
-            $this->emit('end');
-        });
+        // TODO: figure out whether and how to deal with the pipe event
+        Util::forwardEvents($connection, $this, ['end', 'error', 'close', 'drain']);
     }
 
     public function setNamespaceSeparator($separator)
@@ -249,9 +249,9 @@ class Connection
             // Legacy handlers, deprecated:
             $params = $packet->getParams();
             if (\is_object($params)) {
-                return $this->handlers[$namespace]->$method($params);
+                return $handler->$method($params);
             } else {
-                return \call_user_func_array([$this->handlers[$namespace], $method], $params);
+                return \call_user_func_array([$handler, $method], $params);
             }
         } else {
             $error = new Error(Error::METHOD_NOT_FOUND);
