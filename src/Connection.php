@@ -117,7 +117,7 @@ class Connection
                     $response->setError(new Error(Error::INTERNAL_ERROR, $error));
                 }
                 // TODO: Double-check, this used to loop
-                // $this->connection->write($response->toString());
+                $this->connection->write($response->toString());
             });
         } else {
             $response = Response::forRequest($request);
