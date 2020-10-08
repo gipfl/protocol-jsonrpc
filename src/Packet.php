@@ -6,6 +6,8 @@ use gipfl\Protocol\Exception\ProtocolError;
 
 abstract class Packet
 {
+    const JSON_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION;
+
     /** @var \stdClass|null */
     protected $extraProperties;
 
@@ -16,7 +18,7 @@ abstract class Packet
      */
     public function toString()
     {
-        return \json_encode($this->toPlainObject());
+        return \json_encode($this->toPlainObject(), self::JSON_FLAGS);
     }
 
     /**
@@ -24,7 +26,7 @@ abstract class Packet
      */
     public function toPrettyString()
     {
-        return \json_encode($this->toPlainObject(), JSON_PRETTY_PRINT);
+        return \json_encode($this->toPlainObject(), self::JSON_FLAGS | JSON_PRETTY_PRINT);
     }
 
     /**
