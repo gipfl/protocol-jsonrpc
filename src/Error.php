@@ -3,8 +3,9 @@
 namespace gipfl\Protocol\JsonRpc;
 
 use Exception;
+use JsonSerializable;
 
-class Error
+class Error implements JsonSerializable
 {
     const PARSE_ERROR = -32700;
 
@@ -146,7 +147,7 @@ class Error
         return $this;
     }
 
-    public function toPlainObject()
+    public function jsonSerialize()
     {
         $result = [
             'code'    => $this->code,
@@ -168,5 +169,14 @@ class Error
     public static function isCustomErrorCode($code)
     {
         return $code >= self::MIN_CUSTOM_ERROR && $code <= self::MAX_CUSTOM_ERROR;
+    }
+
+    /**
+     * @deprecated please use jsonSerialize()
+     * @return mixed
+     */
+    public function toPlainObject()
+    {
+        return $this->jsonSerialize();
     }
 }

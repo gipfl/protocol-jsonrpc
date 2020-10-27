@@ -26,7 +26,7 @@ class Request extends Notification
      * @return object
      * @throws ProtocolError
      */
-    public function toPlainObject()
+    public function jsonSerialize()
     {
         if ($this->id === null) {
             throw new ProtocolError(
@@ -34,7 +34,7 @@ class Request extends Notification
             );
         }
 
-        $plain = parent::toPlainObject();
+        $plain = parent::jsonSerialize();
         $plain->id = $this->id;
 
         return $plain;

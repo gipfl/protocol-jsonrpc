@@ -68,7 +68,7 @@ class Notification extends Packet
     /**
      * @return object
      */
-    public function toPlainObject()
+    public function jsonSerialize()
     {
         $plain = [
             'jsonrpc' => '2.0',

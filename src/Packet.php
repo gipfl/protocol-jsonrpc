@@ -3,22 +3,21 @@
 namespace gipfl\Protocol\JsonRpc;
 
 use gipfl\Protocol\Exception\ProtocolError;
+use JsonSerializable;
 
-abstract class Packet
+abstract class Packet implements JsonSerializable
 {
     const JSON_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION;
 
     /** @var \stdClass|null */
     protected $extraProperties;
 
-    abstract public function toPlainObject();
-
     /**
      * @return string
      */
     public function toString()
     {
-        return \json_encode($this->toPlainObject(), self::JSON_FLAGS);
+        return \json_encode($this->jsonSerialize(), self::JSON_FLAGS);
     }
 
     /**
@@ -26,7 +25,7 @@ abstract class Packet
      */
     public function toPrettyString()
     {
-        return \json_encode($this->toPlainObject(), self::JSON_FLAGS | JSON_PRETTY_PRINT);
+        return \json_encode($this->jsonSerialize(), self::JSON_FLAGS | JSON_PRETTY_PRINT);
     }
 
     /**
@@ -206,5 +205,14 @@ abstract class Packet
         unset($object->$property);
 
         return $value;
+    }
+
+    /**
+     * @deprecated please use jsonSerialize()
+     * @return string
+     */
+    public function toPlainObject()
+    {
+        return $this->jsonSerialize();
     }
 }

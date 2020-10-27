@@ -27,15 +27,13 @@ class Response extends Packet
      */
     public static function forRequest(Request $request)
     {
-        $response = new Response($request->getId());
-
-        return $response;
+        return new Response($request->getId());
     }
 
     /**
      * @return object
      */
-    public function toPlainObject()
+    public function jsonSerialize()
     {
         $plain = (object) [
             'jsonrpc' => '2.0',
@@ -54,7 +52,7 @@ class Response extends Packet
             if (! isset($plain->id)) {
                 $plain->id = null;
             }
-            $plain->error = $this->error->toPlainObject();
+            $plain->error = $this->error;
         }
 
         return $plain;
