@@ -269,6 +269,15 @@ class Connection
 
     public function close()
     {
-        $this->connection->close();
+        if ($this->connection) {
+            $this->connection->close();
+            $this->handlers = [];
+            foreach ($this->pending as $pending) {
+                $pending->reject('Connection closed');
+            }
+            $this->pending = [];
+            $this->connection = null;
+            $this->emit('close', [$this]);
+        }
     }
 }
