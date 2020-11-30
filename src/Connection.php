@@ -12,6 +12,12 @@ use React\Promise\Promise;
 use React\Stream\DuplexStreamInterface;
 use React\Stream\Util;
 use RuntimeException;
+use function call_user_func_array;
+use function is_object;
+use function mt_rand;
+use function preg_quote;
+use function preg_split;
+use function sprintf;
 
 class Connection implements LoggerAwareInterface
 {
@@ -139,7 +145,7 @@ class Connection implements LoggerAwareInterface
         if (\strpos($method, $this->nsSeparator) === false) {
             $namespace = null;
         } else {
-            list($namespace, $method) = \preg_split($this->nsRegex, $method, 2);
+            list($namespace, $method) = preg_split($this->nsRegex, $method, 2);
         }
 
         try {
@@ -191,7 +197,7 @@ class Connection implements LoggerAwareInterface
 
     protected function getRandomId()
     {
-        $id = rand(1, 1000000000);
+        $id = mt_rand(1, 1000000000);
         if (isset($this->pending[$id])) {
             $id = $this->getRandomId();
         }
@@ -251,23 +257,23 @@ class Connection implements LoggerAwareInterface
 
             // Legacy handlers, deprecated:
             $params = $packet->getParams();
-            if (\is_object($params)) {
+            if (is_object($params)) {
                 return $handler->$method($params);
-            } else {
-                return \call_user_func_array([$handler, $method], $params);
             }
-        } else {
-            $error = new Error(Error::METHOD_NOT_FOUND);
-            $error->setMessage(\sprintf(
-                '%s: %s%s%s',
-                $error->getMessage(),
-                $namespace,
-                $this->nsSeparator,
-                $method
-            ));
 
-            return $error;
+            return call_user_func_array([$handler, $method], $params);
         }
+
+        $error = new Error(Error::METHOD_NOT_FOUND);
+        $error->setMessage(sprintf(
+            '%s: %s%s%s',
+            $error->getMessage(),
+            $namespace,
+            $this->nsSeparator,
+            $method
+        ));
+
+        return $error;
     }
 
     public function close()
