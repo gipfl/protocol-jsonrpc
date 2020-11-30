@@ -5,15 +5,18 @@ namespace gipfl\Protocol\JsonRpc;
 use Evenement\EventEmitterTrait;
 use Exception;
 use InvalidArgumentException;
+use Psr\Log\LoggerAwareInterface;
+use Psr\Log\LoggerAwareTrait;
 use React\Promise\Deferred;
 use React\Promise\Promise;
 use React\Stream\DuplexStreamInterface;
 use React\Stream\Util;
 use RuntimeException;
 
-class Connection
+class Connection implements LoggerAwareInterface
 {
     use EventEmitterTrait;
+    use LoggerAwareTrait;
 
     /** @var DuplexStreamInterface */
     protected $connection;

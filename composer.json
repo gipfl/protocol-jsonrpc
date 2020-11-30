@@ -21,6 +21,7 @@
         "php": ">=5.6.0",
         "ext-json": "*",
         "gipfl/protocol": ">=0.2",
+        "psr/log": "^1.1",
         "react/promise": ">=2.7",
         "react/stream": ">=1.0"
     }
