@@ -165,7 +165,7 @@ class Connection implements LoggerAwareInterface
     {
         $id = $request->getId();
         if ($id === null) {
-            $id = $this->getRandomId();
+            $id = $this->getNextRequestId();
             $request->setId($id);
         }
         if (isset($this->pending[$id])) {
@@ -182,7 +182,7 @@ class Connection implements LoggerAwareInterface
 
     public function request($method, $params = null)
     {
-        $request = new Request($method, $this->getRandomId(), $params);
+        $request = new Request($method, $this->getNextRequestId(), $params);
         $deferred = new Deferred();
         $this->sendRequest($request)->then(function (Response $response) use ($deferred) {
             if ($response->isError()) {
@@ -195,14 +195,16 @@ class Connection implements LoggerAwareInterface
         return $deferred->promise();
     }
 
-    protected function getRandomId()
+    protected function getNextRequestId()
     {
-        $id = mt_rand(1, 1000000000);
-        if (isset($this->pending[$id])) {
-            $id = $this->getRandomId();
+        for ($i = 0; $i < 100; $i++) {
+            $id = mt_rand(1, 1000000000);
+            if (!isset($this->pending[$id])) {
+                return $id;
+            }
         }
 
-        return $id;
+        throw new RuntimeException('Unable to generate a free random request ID, gave up after 100 attempts');
     }
 
     /**
