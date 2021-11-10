@@ -17,6 +17,7 @@ use function is_object;
 use function mt_rand;
 use function preg_quote;
 use function preg_split;
+use function React\Promise\reject;
 use function sprintf;
 
 class Connection implements LoggerAwareInterface
@@ -176,26 +177,27 @@ class Connection implements LoggerAwareInterface
                 "A request with id '$id' is already pending"
             );
         }
+        if (!$this->connection->isWritable()) {
+            return reject(new Exception('Cannot write to socket'));
+        }
         $this->connection->write($request->toString());
         $deferred = new Deferred();
         $this->pending[$id] = $deferred;
 
-        return $deferred->promise();
-    }
-
-    public function request($method, $params = null)
-    {
-        $request = new Request($method, $this->getNextRequestId(), $params);
-        $deferred = new Deferred();
-        $this->sendRequest($request)->then(function (Response $response) use ($deferred) {
+        return $deferred->promise()->then(function (Response $response) use ($deferred) {
             if ($response->isError()) {
                 $deferred->reject(new RuntimeException($response->getError()->getMessage()));
             } else {
                 $deferred->resolve($response->getResult());
             }
+        }, function (Exception $e) use ($deferred) {
+            $deferred->reject($e);
         });
+    }
 
-        return $deferred->promise();
+    public function request($method, $params = null)
+    {
+        return $this->sendRequest(new Request($method, $this->getNextRequestId(), $params));
     }
 
     protected function getNextRequestId()
