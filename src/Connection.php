@@ -30,7 +30,7 @@ class Connection implements LoggerAwareInterface
     /** @var array */
     protected $handlers = [];
 
-    /** @var array */
+    /** @var Deferred[] */
     protected $pending = [];
 
     protected $nsSeparator = '.';
@@ -55,6 +55,9 @@ class Connection implements LoggerAwareInterface
                 $response->setError(Error::forException($error));
                 $this->connection->write($response->toString());
             }
+        });
+        $connection->on('close', function () {
+            $this->rejectAllPendingRequests('Connection closed');
         });
         // TODO: figure out whether and how to deal with the pipe event
         Util::forwardEvents($connection, $this, ['end', 'error', 'close', 'drain']);
@@ -278,17 +281,20 @@ class Connection implements LoggerAwareInterface
         return $error;
     }
 
+    protected function rejectAllPendingRequests($message)
+    {
+        foreach ($this->pending as $pending) {
+            $pending->reject(new Exception());
+        }
+        $this->pending = [];
+    }
+
     public function close()
     {
         if ($this->connection) {
             $this->connection->close();
             $this->handlers = [];
-            foreach ($this->pending as $pending) {
-                $pending->reject('Connection closed');
-            }
-            $this->pending = [];
             $this->connection = null;
-            $this->emit('close', [$this]);
         }
     }
 }
