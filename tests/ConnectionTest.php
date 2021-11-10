@@ -24,9 +24,7 @@ class ConnectionTest extends TestCase
         $streamA = new DuplexResourceStream($sockA, $loop);
         $connection = new Connection();
         $connection->handle($streamA);
-        foreach ($errors as $error) {
-            throw $error;
-        }
+        $this->throwEventualErrors($errors);
         $this->assertInstanceOf(Connection::class, $connection); // Just to have an assertion
     }
 
@@ -54,8 +52,6 @@ class ConnectionTest extends TestCase
             });
         });
         $loop->run();
-        foreach ($errors as $error) {
-            throw $error;
-        }
+        $this->throwEventualErrors($errors);
     }
 }

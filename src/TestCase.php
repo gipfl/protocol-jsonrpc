@@ -32,6 +32,13 @@ class TestCase extends BaseTestCase
             return false; // Always continue with normal error processing
         }, E_ALL | E_STRICT);
 
-        \ error_reporting(E_ALL | E_STRICT);
+        \error_reporting(E_ALL | E_STRICT);
+    }
+
+    protected function throwEventualErrors(array $errors)
+    {
+        foreach ($errors as $error) {
+            throw $error;
+        }
     }
 }
