@@ -2,13 +2,14 @@
 
 namespace gipfl\Protocol\JsonRpc;
 
+use gipfl\Json\JsonException;
+use gipfl\Json\JsonSerialization;
+use gipfl\Json\JsonString;
 use gipfl\Protocol\Exception\ProtocolError;
-use JsonSerializable;
+use function property_exists;
 
-abstract class Packet implements JsonSerializable
+abstract class Packet implements JsonSerialization
 {
-    const JSON_FLAGS = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION;
-
     /** @var \stdClass|null */
     protected $extraProperties;
 
@@ -17,7 +18,7 @@ abstract class Packet implements JsonSerializable
      */
     public function toString()
     {
-        return \json_encode($this->jsonSerialize(), self::JSON_FLAGS);
+        return JsonString::encode($this->jsonSerialize());
     }
 
     /**
@@ -25,7 +26,7 @@ abstract class Packet implements JsonSerializable
      */
     public function toPrettyString()
     {
-        return \json_encode($this->jsonSerialize(), self::JSON_FLAGS | JSON_PRETTY_PRINT);
+        return JsonString::encode($this->jsonSerialize(), JSON_PRETTY_PRINT);
     }
 
     /**
@@ -52,7 +53,7 @@ abstract class Packet implements JsonSerializable
     public function setExtraProperties($extraProperties)
     {
         foreach (['id', 'error', 'result', 'jsonrpc', 'method', 'params'] as $key) {
-            if (\property_exists($extraProperties, $key)) {
+            if (property_exists($extraProperties, $key)) {
                 throw new ProtocolError("Cannot accept '$key' as an extra property");
             }
         }
@@ -99,14 +100,19 @@ abstract class Packet implements JsonSerializable
      */
     public static function decode($string)
     {
-        $raw = \json_decode($string);
-        if (null === $raw && json_last_error() > 0) {
+        try {
+            return self::fromSerialization(JsonString::decode($string));
+        } catch (JsonException $e) {
             throw new ProtocolError(sprintf(
                 'JSON decode failed: %s',
-                \json_last_error_msg()
+                $e->getMessage()
             ), Error::PARSE_ERROR);
         }
-        $version = static::stripRequiredProperty($raw, 'jsonrpc');
+    }
+
+    public static function fromSerialization($any)
+    {
+        $version = static::stripRequiredProperty($any, 'jsonrpc');
         if ($version !== '2.0') {
             throw new ProtocolError(
                 "Only JSON-RPC 2.0 is supported, got $version",
@@ -117,12 +123,12 @@ abstract class Packet implements JsonSerializable
         // Hint: we MUST use property_exists here, as a NULL id is allowed
         // in error responsed in case it wasn't possible to determine a
         // request id
-        $hasId = property_exists($raw, 'id');
-        $id = static::stripOptionalProperty($raw, 'id');
-        $error = static::stripOptionalProperty($raw, 'error');
-        if (\property_exists($raw, 'method')) {
-            $method = static::stripRequiredProperty($raw, 'method');
-            $params = static::stripRequiredProperty($raw, 'params');
+        $hasId = property_exists($any, 'id');
+        $id = static::stripOptionalProperty($any, 'id');
+        $error = static::stripOptionalProperty($any, 'error');
+        if (property_exists($any, 'method')) {
+            $method = static::stripRequiredProperty($any, 'method');
+            $params = static::stripRequiredProperty($any, 'params');
 
             if ($id === null) {
                 $packet = new Notification($method, $params);
@@ -131,7 +137,7 @@ abstract class Packet implements JsonSerializable
             }
         } elseif (! $hasId) {
             throw new ProtocolError(
-                "Given string is not a valid JSON-RPC 2.0 packet: $string",
+                "Given string is not a valid JSON-RPC 2.0 response: id is missing",
                 Error::INVALID_REQUEST
             );
         } else {
@@ -143,12 +149,12 @@ abstract class Packet implements JsonSerializable
                     static::stripOptionalProperty($error, 'data')
                 ));
             } else {
-                $result = static::stripRequiredProperty($raw, 'result');
+                $result = static::stripRequiredProperty($any, 'result');
                 $packet->setResult($result);
             }
         }
-        if (count((array) $raw) > 0) {
-            $packet->setExtraProperties($raw);
+        if (count((array) $any) > 0) {
+            $packet->setExtraProperties($any);
         }
 
         return $packet;
@@ -161,7 +167,7 @@ abstract class Packet implements JsonSerializable
      */
     protected static function assertPropertyExists($object, $property)
     {
-        if (! \property_exists($object, $property)) {
+        if (! property_exists($object, $property)) {
             throw new ProtocolError(
                 "Expected valid JSON-RPC, got no '$property' property",
                 Error::INVALID_REQUEST
@@ -176,7 +182,7 @@ abstract class Packet implements JsonSerializable
      */
     protected static function stripOptionalProperty($object, $property)
     {
-        if (\property_exists($object, $property)) {
+        if (property_exists($object, $property)) {
             $value = $object->$property;
             unset($object->$property);
 
@@ -194,7 +200,7 @@ abstract class Packet implements JsonSerializable
      */
     protected static function stripRequiredProperty($object, $property)
     {
-        if (! \property_exists($object, $property)) {
+        if (! property_exists($object, $property)) {
             throw new ProtocolError(
                 "Expected valid JSON-RPC, got no '$property' property",
                 Error::INVALID_REQUEST
