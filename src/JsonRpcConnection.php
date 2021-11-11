@@ -4,26 +4,21 @@ namespace gipfl\Protocol\JsonRpc;
 
 use Evenement\EventEmitterTrait;
 use Exception;
+use gipfl\Protocol\JsonRpc\Handler\JsonRpcHandler;
 use InvalidArgumentException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
+use Psr\Log\NullLogger;
 use React\Promise\Deferred;
 use React\Promise\Promise;
 use React\Stream\DuplexStreamInterface;
 use React\Stream\Util;
 use RuntimeException;
-use function call_user_func_array;
-use function is_object;
 use function mt_rand;
-use function preg_quote;
-use function preg_split;
 use function React\Promise\reject;
-use function sprintf;
+use function React\Promise\resolve;
 
-/**
- * @deprecated Please use JsonRpcConection
- */
-class Connection implements LoggerAwareInterface
+class JsonRpcConnection implements LoggerAwareInterface
 {
     use EventEmitterTrait;
     use LoggerAwareTrait;
@@ -31,28 +26,28 @@ class Connection implements LoggerAwareInterface
     /** @var DuplexStreamInterface */
     protected $connection;
 
-    /** @var array */
-    protected $handlers = [];
+    /** @var JsonRpcHandler */
+    protected $handler;
 
     /** @var Deferred[] */
     protected $pending = [];
 
-    protected $nsSeparator = '.';
-
-    protected $nsRegex = '/\./';
-
     protected $unknownErrorCount = 0;
 
-    public function handle(DuplexStreamInterface $connection)
+    public function __construct(DuplexStreamInterface $connection, JsonRpcHandler $handler = null)
     {
+        $this->setLogger(new NullLogger());
         $this->connection = $connection;
+        $this->setHandler($handler);
         $this->connection->on('data', function ($data) {
             try {
                 $this->handlePacket(Packet::decode($data));
-            } catch (Exception $error) {
-                echo $error->getMessage() . "\n";
+            } catch (\Exception $error) {
+                $this->logger->error($error->getMessage());
                 $this->unknownErrorCount++;
                 if ($this->unknownErrorCount === 3) {
+                    // e.g.: decoding errors
+                    // TODO: should we really close? Or just send error responses for every Exception?
                     $this->close();
                 }
                 $response = new Response();
@@ -63,16 +58,8 @@ class Connection implements LoggerAwareInterface
         $connection->on('close', function () {
             $this->rejectAllPendingRequests('Connection closed');
         });
-        // TODO: figure out whether and how to deal with the pipe event
+        // Hint: Util::pipe takes care of the pipe event
         Util::forwardEvents($connection, $this, ['end', 'error', 'close', 'drain']);
-    }
-
-    public function setNamespaceSeparator($separator)
-    {
-        $this->nsSeparator = $separator;
-        $this->nsRegex = '/' . preg_quote($separator, '/') . '/';
-
-        return $this;
     }
 
     /**
@@ -83,9 +70,17 @@ class Connection implements LoggerAwareInterface
         if ($packet instanceof Response) {
             $this->handleResponse($packet);
         } elseif ($packet instanceof Request) {
-            $this->handleRequest($packet);
+            if ($this->handler) {
+                $result = $this->handler->processRequest($packet);
+            } else {
+                $result = new Error(Error::METHOD_NOT_FOUND);
+                $result->setMessage($result->getMessage() . ': ' . $packet->getMethod());
+            }
+            $this->sendResultForRequest($packet, $result);
         } elseif ($packet instanceof Notification) {
-            $this->handleNotification($packet);
+            if ($this->handler) {
+                $this->handler->processNotification($packet);
+            }
         } else {
             // Will not happen as long as there is no bug in Packet
             throw new RuntimeException('Packet was neither Request/Notification nor Response');
@@ -106,13 +101,7 @@ class Connection implements LoggerAwareInterface
 
     protected function handleUnmatchedResponse(Response $response)
     {
-        // Ignore. Log?
-    }
-
-    protected function handleRequest(Request $request)
-    {
-        $result = $this->handleNotification($request);
-        $this->sendResultForRequest($request, $result);
+        $this->logger->error('Unmatched Response: ' . $response->toString());
     }
 
     protected function sendResultForRequest(Request $request, $result)
@@ -120,12 +109,15 @@ class Connection implements LoggerAwareInterface
         if ($result instanceof Error) {
             $response = Response::forRequest($request);
             $response->setError($result);
-
-            $this->connection->write($response->toString());
+            if ($this->connection && $this->connection->isWritable()) {
+                $this->connection->write($response->toString());
+            } else {
+                $this->logger->error('Failed to send response, have no writable connection');
+            }
         } elseif ($result instanceof Promise) {
             $result->then(function ($result) use ($request) {
                 $this->sendResultForRequest($request, $result);
-            })->otherwise(function ($error) use ($request) {
+            }, function ($error) use ($request) {
                 $response = Response::forRequest($request);
                 if ($error instanceof Exception) {
                     $response->setError(Error::forException($error));
@@ -134,39 +126,21 @@ class Connection implements LoggerAwareInterface
                 }
                 // TODO: Double-check, this used to loop
                 $this->connection->write($response->toString());
-            });
+            })->done();
         } else {
             $response = Response::forRequest($request);
             $response->setResult($result);
-            $this->connection->write($response->toString());
-        }
-    }
-
-    /**
-     * @param Notification $notification
-     * @return Error|mixed
-     */
-    protected function handleNotification(Notification $notification)
-    {
-        $method = $notification->getMethod();
-        if (\strpos($method, $this->nsSeparator) === false) {
-            $namespace = null;
-        } else {
-            list($namespace, $method) = preg_split($this->nsRegex, $method, 2);
-        }
-
-        try {
-            $response = $this->call($namespace, $method, $notification);
-
-            return $response;
-        } catch (Exception $exception) {
-            return Error::forException($exception);
+            if ($this->connection && $this->connection->isWritable()) {
+                $this->connection->write($response->toString());
+            } else {
+                $this->logger->error('Failed to send response, have no writable connection');
+            }
         }
     }
 
     /**
      * @param Request $request
-     * @return \React\Promise\Promise
+     * @return \React\Promise\PromiseInterface
      */
     public function sendRequest(Request $request)
     {
@@ -184,17 +158,17 @@ class Connection implements LoggerAwareInterface
             return reject(new Exception('Cannot write to socket'));
         }
         $this->connection->write($request->toString());
-        $deferred = new Deferred();
+        $deferred = new Deferred(function () use ($id) {
+            unset($this->pending[$id]);
+        });
         $this->pending[$id] = $deferred;
 
-        return $deferred->promise()->then(function (Response $response) use ($deferred) {
+        return $deferred->promise()->then(function (Response $response) {
             if ($response->isError()) {
-                $deferred->reject(new RuntimeException($response->getError()->getMessage()));
-            } else {
-                $deferred->resolve($response->getResult());
+                return reject(new RuntimeException($response->getError()->getMessage()));
             }
-        }, function (Exception $e) use ($deferred) {
-            $deferred->reject($e);
+
+            return resolve($response->getResult());
         });
     }
 
@@ -216,18 +190,6 @@ class Connection implements LoggerAwareInterface
     }
 
     /**
-     * @param Request|mixed $request
-     */
-    public function forgetRequest($request)
-    {
-        if ($request instanceof Request) {
-            unset($this->pending[$request->getId()]);
-        } else {
-            unset($this->pending[$request]);
-        }
-    }
-
-    /**
      * @param Notification $packet
      */
     public function sendNotification(Notification $packet)
@@ -246,50 +208,19 @@ class Connection implements LoggerAwareInterface
     }
 
     /**
-     * @param $namespace
-     * @param $handler
-     * @return Connection
+     * @param PacketHandler $handler
+     * @return $this
      */
-    public function setHandler($handler, $namespace = null)
+    public function setHandler(JsonRpcHandler $handler = null)
     {
-        $this->handlers[$namespace] = $handler;
-
+        $this->handler = $handler;
         return $this;
-    }
-
-    protected function call($namespace, $method, Notification $packet)
-    {
-        if (isset($this->handlers[$namespace])) {
-            $handler = $this->handlers[$namespace];
-            if ($handler instanceof PacketHandler) {
-                return $handler->handle($packet);
-            }
-
-            // Legacy handlers, deprecated:
-            $params = $packet->getParams();
-            if (is_object($params)) {
-                return $handler->$method($params);
-            }
-
-            return call_user_func_array([$handler, $method], $params);
-        }
-
-        $error = new Error(Error::METHOD_NOT_FOUND);
-        $error->setMessage(sprintf(
-            '%s: %s%s%s',
-            $error->getMessage(),
-            $namespace,
-            $this->nsSeparator,
-            $method
-        ));
-
-        return $error;
     }
 
     protected function rejectAllPendingRequests($message)
     {
         foreach ($this->pending as $pending) {
-            $pending->reject(new Exception());
+            $pending->reject(new Exception($message));
         }
         $this->pending = [];
     }
@@ -298,7 +229,7 @@ class Connection implements LoggerAwareInterface
     {
         if ($this->connection) {
             $this->connection->close();
-            $this->handlers = [];
+            $this->handler = null;
             $this->connection = null;
         }
     }
