@@ -120,7 +120,7 @@ class NamespacedPacketHandler implements JsonRpcHandler
         } else {
             $rpcMethod = $method . 'Notification';
             if (method_exists($handler, $rpcMethod)) {
-                call_user_func_array([$handler, $method], $params);
+                call_user_func_array([$handler, $rpcMethod], $params);
             }
 
             return null;
