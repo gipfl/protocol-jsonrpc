@@ -174,11 +174,15 @@ class NamespacedPacketHandler implements JsonRpcHandler
                                 }
                             }
                         }
-                        throw new Exception('Unsupported parameter type: ' . $parameter->getType());
+                        throw new Exception(sprintf(
+                            'Unsupported parameter type for %s: %s',
+                            $method,
+                            $parameter->getType()
+                        ));
                 }
             } else {
                 // TODO: isRequired? Set null
-                throw new Exception("Missing parameter: $name");
+                throw new Exception("Missing parameter for $method: $name");
             }
         }
 
