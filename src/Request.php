@@ -26,6 +26,7 @@ class Request extends Notification
      * @return object
      * @throws ProtocolError
      */
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         if ($this->id === null) {

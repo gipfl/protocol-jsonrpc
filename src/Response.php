@@ -33,6 +33,7 @@ class Response extends Packet
     /**
      * @return object
      */
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         $plain = (object) [
