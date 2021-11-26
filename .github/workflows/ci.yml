@@ -37,4 +37,4 @@ jobs:
         run: vendor/bin/phpcs
 
       - name: Unit Tests
-        run: vendor/bin/phpunit
+        run: vendor/bin/phpunit --testdox || vendor/bin/phpunit
