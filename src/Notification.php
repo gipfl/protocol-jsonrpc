@@ -68,6 +68,7 @@ class Notification extends Packet
     /**
      * @return object
      */
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         $plain = [

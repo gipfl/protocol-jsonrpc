@@ -19,6 +19,7 @@
     },
     "require": {
         "php": ">=5.6.0",
+        "ext-json": "*",
         "gipfl/json": ">=0.1",
         "gipfl/openrpc": "^0.1.0",
         "gipfl/protocol": ">=0.2",

@@ -147,6 +147,7 @@ class Error implements JsonSerializable
         return $this;
     }
 
+    #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
         $result = [
