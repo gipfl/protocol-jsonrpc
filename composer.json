@@ -21,9 +21,9 @@
         "php": ">=5.6.0",
         "ext-json": "*",
         "gipfl/json": ">=0.1",
-        "gipfl/openrpc": "^0.1.0",
+        "gipfl/openrpc": "^0.2.1",
         "gipfl/protocol": ">=0.2",
-        "psr/log": "^1.1",
+        "psr/log": ">=1.1",
         "react/promise": ">=2.7",
         "react/stream": ">=1.0"
     },
