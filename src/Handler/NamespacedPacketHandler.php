@@ -137,7 +137,7 @@ class NamespacedPacketHandler implements JsonRpcHandler
         $result = [];
         foreach ($meta->getParameters() as $parameter) {
             $name = $parameter->getName();
-            if (isset($params->$name)) {
+            if (property_exists($params, $name)) {
                 $value = $params->$name;
                 if ($value === null) {
                     // TODO: check if required
