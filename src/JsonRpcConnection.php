@@ -4,6 +4,7 @@ namespace gipfl\Protocol\JsonRpc;
 
 use Evenement\EventEmitterTrait;
 use Exception;
+use gipfl\Json\JsonEncodeException;
 use gipfl\Protocol\JsonRpc\Handler\JsonRpcHandler;
 use InvalidArgumentException;
 use Psr\Log\LoggerAwareInterface;
@@ -157,7 +158,11 @@ class JsonRpcConnection implements LoggerAwareInterface
         if (!$this->connection->isWritable()) {
             return reject(new Exception('Cannot write to socket'));
         }
-        $this->connection->write($request->toString());
+        try {
+            $this->connection->write($request->toString());
+        } catch (JsonEncodeException $e) {
+            return reject($e->getMessage());
+        }
         $deferred = new Deferred(function () use ($id) {
             unset($this->pending[$id]);
         });

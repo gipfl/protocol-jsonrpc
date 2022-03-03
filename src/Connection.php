@@ -4,6 +4,7 @@ namespace gipfl\Protocol\JsonRpc;
 
 use Evenement\EventEmitterTrait;
 use Exception;
+use gipfl\Json\JsonEncodeException;
 use InvalidArgumentException;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
@@ -166,7 +167,7 @@ class Connection implements LoggerAwareInterface
 
     /**
      * @param Request $request
-     * @return \React\Promise\Promise
+     * @return \React\Promise\PromiseInterface
      */
     public function sendRequest(Request $request)
     {
@@ -183,7 +184,11 @@ class Connection implements LoggerAwareInterface
         if (!$this->connection->isWritable()) {
             return reject(new Exception('Cannot write to socket'));
         }
-        $this->connection->write($request->toString());
+        try {
+            $this->connection->write($request->toString());
+        } catch (JsonEncodeException $e) {
+            return reject($e->getMessage());
+        }
         $deferred = new Deferred();
         $this->pending[$id] = $deferred;
 

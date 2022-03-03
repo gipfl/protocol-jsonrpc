@@ -15,6 +15,7 @@ abstract class Packet implements JsonSerialization
 
     /**
      * @return string
+     * @throws \gipfl\Json\JsonEncodeException
      */
     public function toString()
     {
@@ -23,6 +24,7 @@ abstract class Packet implements JsonSerialization
 
     /**
      * @return string
+     * @throws \gipfl\Json\JsonEncodeException
      */
     public function toPrettyString()
     {
