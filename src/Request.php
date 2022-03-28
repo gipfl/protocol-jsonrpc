@@ -11,7 +11,7 @@ class Request extends Notification
 
     /**
      * Request constructor.
-     * @param $method
+     * @param string $method
      * @param mixed $id
      * @param null $params
      */

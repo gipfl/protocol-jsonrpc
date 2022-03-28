@@ -163,8 +163,8 @@ abstract class Packet implements JsonSerialization
     }
 
     /**
-     * @param $object
-     * @param $property
+     * @param object $object
+     * @param string $property
      * @throws ProtocolError
      */
     protected static function assertPropertyExists($object, $property)
