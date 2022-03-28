@@ -91,7 +91,7 @@ class Notification extends Packet
      */
     public static function create($method, $params)
     {
-        $packet = new static($method, $params);
+        $packet = new Notification($method, $params);
 
         return $packet;
     }
