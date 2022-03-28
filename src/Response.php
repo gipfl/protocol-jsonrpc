@@ -36,7 +36,7 @@ class Response extends Packet
     #[\ReturnTypeWillChange]
     public function jsonSerialize()
     {
-        $plain = (object) [
+        $plain = [
             'jsonrpc' => '2.0',
         ];
         if ($this->hasExtraProperties()) {
@@ -44,19 +44,19 @@ class Response extends Packet
         }
 
         if ($this->id !== null) {
-            $plain->id = $this->id;
+            $plain['id'] = $this->id;
         }
 
         if ($this->error === null) {
-            $plain->result = $this->result;
+            $plain['result'] = $this->result;
         } else {
-            if (! isset($plain->id)) {
-                $plain->id = null;
+            if (! isset($plain['id'])) {
+                $plain['id'] = null;
             }
-            $plain->error = $this->error;
+            $plain['error'] = $this->error;
         }
 
-        return $plain;
+        return (object) $plain;
     }
 
     /**
