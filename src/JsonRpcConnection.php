@@ -27,7 +27,7 @@ class JsonRpcConnection implements LoggerAwareInterface
     /** @var DuplexStreamInterface */
     protected $connection;
 
-    /** @var JsonRpcHandler */
+    /** @var ?JsonRpcHandler */
     protected $handler;
 
     /** @var Deferred[] */
