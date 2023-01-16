@@ -10,6 +10,7 @@ use gipfl\Protocol\JsonRpc\Error;
 use gipfl\Protocol\JsonRpc\Notification;
 use gipfl\Protocol\JsonRpc\Request;
 use RuntimeException;
+use TypeError;
 use function call_user_func_array;
 use function method_exists;
 use function preg_split;
@@ -36,6 +37,8 @@ class NamespacedPacketHandler implements JsonRpcHandler
             $this->call($namespace, $method, $notification);
         } catch (Exception $exception) {
             // Well... we might want to log this
+        } catch (TypeError $exception) {
+            // Well... we might want to log this
         }
     }
 
@@ -47,6 +50,8 @@ class NamespacedPacketHandler implements JsonRpcHandler
             return $this->call($namespace, $method, $request);
         } catch (Exception $exception) {
             return Error::forException($exception);
+        } catch (TypeError $error) {
+            return Error::forTypeError($error);
         }
     }
 

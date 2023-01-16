@@ -4,6 +4,7 @@ namespace gipfl\Protocol\JsonRpc;
 
 use Exception;
 use JsonSerializable;
+use TypeError;
 
 class Error implements JsonSerializable
 {
@@ -94,6 +95,18 @@ class Error implements JsonSerializable
             $exception->getFile(),
             $exception->getLine()
         ), $data);
+    }
+
+    public static function forTypeError(TypeError $error)
+    {
+        $code = self::INVALID_PARAMS;
+
+        return new Error($code, sprintf(
+            '%s in %s(%d)',
+            $error->getMessage(),
+            $error->getFile(),
+            $error->getLine()
+        ));
     }
 
     /**
