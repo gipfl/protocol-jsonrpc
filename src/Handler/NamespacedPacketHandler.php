@@ -95,7 +95,7 @@ class NamespacedPacketHandler implements JsonRpcHandler
     protected function call($namespace, $method, Notification $notification)
     {
         if (! isset($this->handlers[$namespace])) {
-            return $this->notFound($notification);
+            return $this->notFound($notification, ', no handler for ' . $namespace);
         }
 
         $handler = $this->handlers[$namespace];
@@ -117,14 +117,14 @@ class NamespacedPacketHandler implements JsonRpcHandler
         }
         if ($notification instanceof Request) {
             $rpcMethod = $method . 'Request';
-            if (method_exists($handler, $rpcMethod)) {
+            if (is_callable([$handler, $rpcMethod])) {
                 return call_user_func_array([$handler, $rpcMethod], $params);
             }
 
-            return $this->notFound($notification);
+            return $this->notFound($notification, ', no ' . $rpcMethod);
         } else {
             $rpcMethod = $method . 'Notification';
-            if (method_exists($handler, $rpcMethod)) {
+            if (is_callable([$handler, $rpcMethod])) {
                 call_user_func_array([$handler, $rpcMethod], $params);
             }
 
@@ -203,11 +203,11 @@ class NamespacedPacketHandler implements JsonRpcHandler
         return preg_split($this->nsRegex, $method, 2);
     }
 
-    protected function notFound(Notification $notification)
+    protected function notFound(Notification $notification, $suffix = '')
     {
         $error = new Error(Error::METHOD_NOT_FOUND);
         $error->setMessage(sprintf(
-            '%s: %s',
+            '%s: %s' . $suffix,
             $error->getMessage(),
             $notification->getMethod()
         ));
